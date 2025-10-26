@@ -1,68 +1,55 @@
 module.exports = {
   config: {
     name: "tag",
-    version: "3.1",
-    author: "Aryan Chauhan",
+    alises:[],
+    category: '𝗧𝗔𝗚',
     role: 0,
-    shortDescription: { en: "Mention by name or all" },
-    longDescription: { en: "Tag a user, reply, or all members (admin only)" },
-    category: "box chat",
-    guide: { en: "{p}mention <name>\n{p}mention all\n{p}mention (reply/self)" }
+    author: 'dipto',
+    countDown: 3,
+    description: { en: '𝗧𝗮𝗴𝘀 𝗮 𝘂𝘀𝗲𝗿 𝘁𝗼 𝘁𝗵𝗲 𝗽𝗿𝗼𝘃𝗶𝗱𝗲𝗱 𝗻𝗮𝗺𝗲 𝗼𝗿 𝗺𝗲𝘀𝘀𝗮𝗴𝗲 𝗿𝗲𝗽𝗹𝘆.' },
+    guide: {
+      en: `1. Reply to a message\n2. Use {pm}tag [name]\n3. Use {pm}tag [name] [message] `
+    },
   },
-
-  onStart: async function ({ event: a, message: b, args: c, usersData: d, api: e }) {
-    const f = a.threadID, g = a.senderID, h = a.messageReply;
-    const i = await e.getThreadInfo(f), j = i.adminIDs.map(u => u.id), k = i.userInfo;
-    const l = m => new Promise(r => setTimeout(r, m));
-
-    if (c[0]?.toLowerCase() === "all") {
-      if (!j.includes(g)) return b.reply("🚫 Only admins can tag all.");
-      const n = i.participantIDs.filter(x => x != e.getCurrentUserID());
-      const o = n.map(u => {
-        const q = k.find(z => z.id === u)?.name || "User";
-        return { id: u, tag: `@${q}` };
-      });
-      const p = c.slice(1).join(" ") || "Hey everyone ✨";
-      for (let r = 0; r < o.length; r += 15) {
-        const s = o.slice(r, r + 15);
-        await b.reply({ body: `${p}\n${s.map(x => x.tag).join(" ")}`, mentions: s });
-        await l(1000);
+  onStart: async ({ api, event, usersData, threadsData, args }) => {
+    const { threadID, messageID, messageReply } = event;
+    try {
+      const d = await threadsData.get(threadID);
+      const dd = d.members.map(gud => gud.name);
+      const pp = d.members.map(gud => gud.userID);
+      const combined = dd.map((name, index) => ({
+        Name: name,
+        UserId: pp[index]
+      }));
+      let namesToTag = [];
+      let extraMessage = args.join(' ');
+      let m = messageID;
+      if (messageReply) {
+        m = messageReply.messageID;
+        const uid = messageReply.senderID;
+        const name = await usersData.getName(uid);
+        namesToTag.push({ Name: name, UserId: uid });
+      } else {
+        extraMessage = args.slice(1).join(' ');
+        const namesToCheck = args.length > 0 ? [args[0]] : ['dip'];
+        namesToTag = combined.filter(member =>
+          namesToCheck.some(name => member.Name.toLowerCase().includes(name.toLowerCase())));
+        if (namesToTag.length === 0) {
+          return api.sendMessage('not found', threadID, messageID);
+        }
       }
-      return;
+      const mentions = namesToTag.map(({ Name, UserId }) => ({
+        tag: Name,
+        id: UserId
+      }));
+      const body = namesToTag.map(({ Name }) => Name).join(', ');
+      const finalBody = extraMessage ? `${body} - ${extraMessage}` : body;
+      api.sendMessage({
+          body: finalBody,
+          mentions
+        },threadID,m);
+    } catch (e) {
+      api.sendMessage(e.message, threadID, messageID);
     }
-
-    let t, u = "";
-
-    const v = async x => {
-      const y = await d.getAll(), z = x.toLowerCase();
-      return y.filter(w => w.name?.toLowerCase().includes(z));
-    };
-
-    if (c.length > 0) {
-      let aa = c.slice(0, 4).join(" "), ab = await v(aa);
-      for (let ac = 3; ab.length === 0 && ac >= 1; ac--) {
-        aa = c.slice(0, ac).join(" ");
-        ab = await v(aa);
-      }
-      if (ab.length === 0) return b.reply("❌ No matching name.");
-      t = ab[0].userID;
-      u = c.slice(aa.split(" ").length).join(" ");
-    }
-    else if (h?.senderID) {
-      t = h.senderID;
-      u = c.join(" ");
-    }
-    else {
-      t = g;
-      u = c.join(" ");
-    }
-
-    const ad = await d.get(t);
-    if (!ad) return b.reply("❌ Cannot get user data.");
-
-    const ae = [{ id: t, tag: `@${ad.name}` }];
-    const af = `${u} ${ae[0].tag}`.trim();
-
-    return b.reply({ body: af, mentions: ae });
   }
 };
