@@ -69,7 +69,7 @@ module.exports.onStart = async function ({ api, event, args }) {
 
     api.sendMessage(
       {
-        body: `━━━━━━━━━━━━━━━━━━━━━━━\n📱 Number: ${number}\n🧾 Transaction ID: ${transaction}\n💵 Amount: ৳${amount}\n━━━━━━━━━━━━━━━━━━━━━━━\n✅ Powered by Yeasin`,
+        body: `━━━━━━━━━━━━━━━━━━━━━━━\n📱 Number: ${number}\n🧾 Transaction ID: ${transaction}\n💵 Amount: ৳${amount}\n━━━━━━━━━━━━━━━━━━━━━━━\n✅ Powered by Ceo ariyan vurus your dad is back \n\n🚩🚩🚩🚩`,
         attachment: imageStream
       },
       event.threadID,
